@@ -30,6 +30,23 @@ test_that("local_package works", {
   expect_false("package:tools" %in% search())
 })
 
+test_that("local_package does not unload previously loaded package", {
+  with_package("tools", {
+    # tools package is attached to the search path
+    expect_true("package:tools" %in% search())
+
+    f <- function() {
+      local_package("tools")
+      expect_true("package:tools" %in% search())
+    }
+
+    f()
+
+    # tools package is still attached to the search path
+    expect_true("package:tools" %in% search())
+  })
+})
+
 test_that("with_namespace works", {
 
   # tools package not attached to the search path

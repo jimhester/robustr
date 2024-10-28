@@ -22,16 +22,11 @@ with_package <- function(package, code, pos = 2, lib.loc = NULL,
   character.only = TRUE, logical.return = FALSE, warn.conflicts = FALSE,
   quietly = TRUE, verbose = getOption("verbose")) {
 
-  # Only try to attach (and detach) the package if it is not already attached.
-  if (!(package %in% .packages())) {
-    suppressPackageStartupMessages(
-      (get("library"))(package, pos = pos, lib.loc = lib.loc,
-        character.only = character.only, logical.return = logical.return,
-        warn.conflicts = warn.conflicts, quietly = quietly, verbose = verbose))
-
-    on.exit(detach(paste0("package:", package), character.only = TRUE))
-  }
-
+  local_package(package = package, pos = pos, lib.loc = lib.loc,
+                character.only = character.only,
+                logical.return = logical.return,
+                warn.conflicts = warn.conflicts,
+                quietly = quietly, verbose = verbose)
   force(code)
 }
 
@@ -42,12 +37,18 @@ local_package <- function(package, pos = 2, lib.loc = NULL,
   quietly = TRUE, verbose = getOption("verbose"),
   .local_envir = parent.frame()) {
 
-  suppressPackageStartupMessages(
-    (get("library"))(package, pos = pos, lib.loc = lib.loc,
-      character.only = character.only, logical.return = logical.return,
-      warn.conflicts = warn.conflicts, quietly = quietly, verbose = verbose))
+  if (!(package %in% .packages())) {
+    suppressPackageStartupMessages(
+      (get("library"))(package, pos = pos, lib.loc = lib.loc,
+        character.only = character.only, logical.return = logical.return,
+        warn.conflicts = warn.conflicts, quietly = quietly, verbose = verbose))
 
-  defer(detach(paste0("package:", package), character.only = TRUE), envir = .local_envir)
+    defer({
+      if (package %in% .packages()) {
+        detach(paste0("package:", package), character.only = TRUE)
+      }
+    }, envir = .local_envir)
+  }
 }
 
 #' @rdname with_package
